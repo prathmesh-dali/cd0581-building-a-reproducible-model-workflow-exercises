@@ -2,3 +2,5 @@
 mlruns/
 wandb/
 .hydra/
+outputs/
+artifacts/
