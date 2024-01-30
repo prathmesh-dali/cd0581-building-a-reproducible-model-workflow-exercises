@@ -8,11 +8,12 @@ import tempfile
 import mlflow
 import pandas as pd
 import numpy as np
+import mlflow.sklearn
 from mlflow.models import infer_signature
 from sklearn.compose import ColumnTransformer
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.metrics import roc_auc_score, plot_confusion_matrix
+from sklearn.metrics import roc_auc_score, ConfusionMatrixDisplay
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import OrdinalEncoder, StandardScaler, FunctionTransformer
 import matplotlib.pyplot as plt
@@ -27,7 +28,6 @@ logger = logging.getLogger()
 def go(args):
 
     run = wandb.init(job_type="train")
-
     logger.info("Downloading and reading train artifact")
     train_data_path = run.use_artifact(args.train_data).file()
     df = pd.read_csv(train_data_path, low_memory=False)
@@ -67,7 +67,7 @@ def go(args):
     fig_feat_imp = plot_feature_importance(pipe)
 
     fig_cm, sub_cm = plt.subplots(figsize=(10, 10))
-    plot_confusion_matrix(
+    ConfusionMatrixDisplay.from_estimator(
         pipe,
         X_val,
         y_val,
@@ -105,6 +105,17 @@ def export_model(run, pipe, X_val, val_pred, export_artifact):
         # 1. create a wandb.Artifact instance called "artifact"
         # 2. add the temp directory using .add_dir
         # 3. log the artifact to the run
+
+        
+
+        mlflow.sklearn.save_model(pipe, export_path, signature=signature, serialization_format=mlflow.sklearn.SERIALIZATION_FORMAT_CLOUDPICKLE, input_example=X_val.iloc[:2])
+        artifact = wandb.Artifact(
+            export_artifact,
+            type="model_export",
+            description="Random Forest pipeline export",
+        )
+        artifact.add_dir(export_path)
+        run.log_artifact(artifact)
 
         # Make sure the artifact is uploaded before the temp dir
         # gets deleted
