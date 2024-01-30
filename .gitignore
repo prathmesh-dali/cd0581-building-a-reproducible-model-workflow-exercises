@@ -4,3 +4,5 @@ wandb/
 .hydra/
 outputs/
 artifacts/
+multirun/
+__pycache__/
